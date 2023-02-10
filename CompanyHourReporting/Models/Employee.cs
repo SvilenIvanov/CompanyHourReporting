@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Diagnostics.CodeAnalysis;
 
 namespace CompanyHourReporting.Models {
@@ -14,7 +15,10 @@ namespace CompanyHourReporting.Models {
         [Required, NotNull]
         public int Age { get; set; }
 
-        
+        public int? CompanyId { get; set; }
+        [ForeignKey("CompanyId")]
+        public Company Company { get; set; }
+
 
     }
 }
