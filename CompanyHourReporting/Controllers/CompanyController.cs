@@ -7,14 +7,16 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using CompanyHourReporting.Data;
 using CompanyHourReporting.Models;
+using CompanyHourReporting.DataAccess.Repository;
+using CompanyHourReporting.DataAccess.Repository.IRepository;
 
 namespace CompanyHourReporting.Controllers
 {
     public class CompanyController : Controller
     {
-        private readonly AppDbContext _context;
+        private readonly IUnitOfWork _context;
 
-        public CompanyController(AppDbContext context)
+        public CompanyController(IUnitOfWork context)
         {
             _context = context;
         }
@@ -22,19 +24,18 @@ namespace CompanyHourReporting.Controllers
         // GET: Companies
         public async Task<IActionResult> Index()
         {
-              return View(await _context.Companies.ToListAsync());
+              return View(_context.Company.GetAll());
         }
 
         // GET: Companies/Details/5
         public async Task<IActionResult> Details(int? id)
         {
-            if (id == null || _context.Companies == null)
+            if (id == null || _context.Company.GetFirstOrDefault(m => m.Id == id) == null)
             {
                 return NotFound();
             }
 
-            var company = await _context.Companies
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var company = _context.Company.GetFirstOrDefault(m => m.Id == id);
             if (company == null)
             {
                 return NotFound();
@@ -58,8 +59,8 @@ namespace CompanyHourReporting.Controllers
         {
             if (ModelState.IsValid)
             {
-                _context.Add(company);
-                await _context.SaveChangesAsync();
+                _context.Company.Add(company);
+                _context.Save();
                 return RedirectToAction(nameof(Index));
             }
             return View(company);
@@ -68,12 +69,12 @@ namespace CompanyHourReporting.Controllers
         // GET: Companies/Edit/5
         public async Task<IActionResult> Edit(int? id)
         {
-            if (id == null || _context.Companies == null)
+            if (id == null || _context.Company.GetFirstOrDefault(m => m.Id == id) == null)
             {
                 return NotFound();
             }
 
-            var company = await _context.Companies.FindAsync(id);
+            var company = _context.Company.GetFirstOrDefault(m => m.Id == id);
             if (company == null)
             {
                 return NotFound();
@@ -97,8 +98,8 @@ namespace CompanyHourReporting.Controllers
             {
                 try
                 {
-                    _context.Update(company);
-                    await _context.SaveChangesAsync();
+                    _context.Company.Update(company);
+                    _context.Save();
                 }
                 catch (DbUpdateConcurrencyException)
                 {
@@ -119,13 +120,12 @@ namespace CompanyHourReporting.Controllers
         // GET: Companies/Delete/5
         public async Task<IActionResult> Delete(int? id)
         {
-            if (id == null || _context.Companies == null)
+            if (id == null || _context.Company.GetFirstOrDefault(m => m.Id == id) == null)
             {
                 return NotFound();
             }
 
-            var company = await _context.Companies
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var company = _context.Company.GetFirstOrDefault(m => m.Id == id);
             if (company == null)
             {
                 return NotFound();
@@ -139,23 +139,23 @@ namespace CompanyHourReporting.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            if (_context.Companies == null)
+            if (_context.Company.GetFirstOrDefault(m => m.Id == id) == null)
             {
                 return Problem("Entity set 'AppDbContext.Companies'  is null.");
             }
-            var company = await _context.Companies.FindAsync(id);
+            var company = _context.Company.GetFirstOrDefault(m => m.Id == id);
             if (company != null)
             {
-                _context.Companies.Remove(company);
+                _context.Company.Remove(company);
             }
             
-            await _context.SaveChangesAsync();
+            _context.Save();
             return RedirectToAction(nameof(Index));
         }
 
         private bool CompanyExists(int id)
         {
-          return _context.Companies.Any(e => e.Id == id);
+          return _context.Company.GetAll().Any(e => e.Id == id);
         }
     }
 }
