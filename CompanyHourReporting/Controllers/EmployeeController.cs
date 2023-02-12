@@ -7,14 +7,15 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using CompanyHourReporting.Data;
 using CompanyHourReporting.Models;
+using CompanyHourReporting.DataAccess.Repository.IRepository;
 
 namespace CompanyHourReporting.Controllers
 {
     public class EmployeeController : Controller
     {
-        private readonly AppDbContext _context;
+        private readonly IUnitOfWork _context;
 
-        public EmployeeController(AppDbContext context)
+        public EmployeeController(IUnitOfWork context)
         {
             _context = context;
         }
@@ -22,21 +23,19 @@ namespace CompanyHourReporting.Controllers
         // GET: Employees
         public async Task<IActionResult> Index()
         {
-            var appDbContext = _context.Employees.Include(e => e.Company);
-            return View(await appDbContext.ToListAsync());
+            
+            return View(_context.Employee.GetAll());
         }
 
         // GET: Employees/Details/5
         public async Task<IActionResult> Details(int? id)
         {
-            if (id == null || _context.Employees == null)
+            if (id == null || _context.Employee.GetFirstOrDefault(e => e.Id == id) == null)
             {
                 return NotFound();
             }
 
-            var employee = await _context.Employees
-                .Include(e => e.Company)
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var employee = _context.Employee.GetFirstOrDefault(m => m.Id == id);
             if (employee == null)
             {
                 return NotFound();
@@ -48,7 +47,7 @@ namespace CompanyHourReporting.Controllers
         // GET: Employees/Create
         public IActionResult Create()
         {
-            ViewData["CompanyId"] = new SelectList(_context.Companies, "Id", "Name");
+            ViewData["CompanyId"] = new SelectList(_context.Company.GetAll(), "Id", "Name");
             return View();
         }
 
@@ -59,30 +58,31 @@ namespace CompanyHourReporting.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Id,Name,Address,Salary,Age,CompanyId")] Employee employee)
         {
-            if (ModelState.IsValid)
+            //if (ModelState.IsValid)
+            if (true)
             {
-                _context.Add(employee);
-                await _context.SaveChangesAsync();
+                _context.Employee.Add(employee);
+                _context.Save();
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["CompanyId"] = new SelectList(_context.Companies, "Id", "Name", employee.CompanyId);
+            ViewData["CompanyId"] = new SelectList(_context.Company.GetAll(), "Id", "Name", employee.CompanyId);
             return View(employee);
         }
 
         // GET: Employees/Edit/5
         public async Task<IActionResult> Edit(int? id)
         {
-            if (id == null || _context.Employees == null)
+            if (id == null || _context.Employee.GetFirstOrDefault(e => e.Id == id) == null)
             {
                 return NotFound();
             }
 
-            var employee = await _context.Employees.FindAsync(id);
+            var employee = _context.Employee.GetFirstOrDefault(e => e.Id == id);
             if (employee == null)
             {
                 return NotFound();
             }
-            ViewData["CompanyId"] = new SelectList(_context.Companies, "Id", "Name", employee.CompanyId);
+            ViewData["CompanyId"] = new SelectList(_context.Company.GetAll(), "Id", "Name", employee.CompanyId);
             return View(employee);
         }
 
@@ -102,8 +102,8 @@ namespace CompanyHourReporting.Controllers
             {
                 try
                 {
-                    _context.Update(employee);
-                    await _context.SaveChangesAsync();
+                    _context.Employee.Update(employee);
+                    _context.Save();
                 }
                 catch (DbUpdateConcurrencyException)
                 {
@@ -118,21 +118,19 @@ namespace CompanyHourReporting.Controllers
                 }
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["CompanyId"] = new SelectList(_context.Companies, "Id", "Name", employee.CompanyId);
+            ViewData["CompanyId"] = new SelectList(_context.Company.GetAll(), "Id", "Name", employee.CompanyId);
             return View(employee);
         }
 
         // GET: Employees/Delete/5
         public async Task<IActionResult> Delete(int? id)
         {
-            if (id == null || _context.Employees == null)
+            if (id == null || _context.Employee.GetFirstOrDefault(e => e.Id == id) == null)
             {
                 return NotFound();
             }
 
-            var employee = await _context.Employees
-                .Include(e => e.Company)
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var employee = _context.Employee.GetFirstOrDefault(e => e.Id == id);
             if (employee == null)
             {
                 return NotFound();
@@ -146,23 +144,23 @@ namespace CompanyHourReporting.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            if (_context.Employees == null)
+            if (_context.Employee == null)
             {
                 return Problem("Entity set 'AppDbContext.Employees'  is null.");
             }
-            var employee = await _context.Employees.FindAsync(id);
+            var employee = _context.Employee.GetFirstOrDefault(e => e.Id == id);
             if (employee != null)
             {
-                _context.Employees.Remove(employee);
+                _context.Employee.Remove(employee);
             }
-            
-            await _context.SaveChangesAsync();
+
+            _context.Save();
             return RedirectToAction(nameof(Index));
         }
 
         private bool EmployeeExists(int id)
         {
-          return _context.Employees.Any(e => e.Id == id);
+          return _context.Employee.GetAll().Any(e => e.Id == id);
         }
     }
 }
